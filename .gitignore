@@ -1,0 +1,5 @@
+/res
+/test
+*.mp4
+/.idea
+*.pyc
