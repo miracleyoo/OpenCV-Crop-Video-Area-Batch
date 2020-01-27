@@ -11,26 +11,14 @@ procs = []
 global pts1
 def mouse_drawing(event, x, y, flags, params):
     if event == cv2.EVENT_LBUTTONDOWN:
-        # circles.append((x, y))
         pos.append([x, y])
         print(pos)
-
-
-def draw ():
-    pts1 = np.float32([pos[0], pos[1], pos[2], pos[3]])
-    pts2 = np.float32([[0, 0], [576, 0], [0, 704], [576, 704]])
-    matrix = cv2.getPerspectiveTransform(pts1, pts2)
-    result = cv2.warpPerspective(frame, matrix, (576, 704))
-    cv2.imshow("pres", result)
-
 
 def crop(pos, in_path, out_path):
     global procs
     crop_area = [abs(pos[0][0]-pos[1][0]),abs(pos[0][1]-pos[1][1]),min(pos[0][0],pos[1][0]),min(pos[0][1],pos[1][1])]
     procs.append(subprocess.Popen("ffmpeg -i "+in_path+" -strict -2"+" -filter:v "+'"crop={}:{}:{}:{}"'.format(*crop_area)+" "+out_path, shell=True))
-    # subprocess.run(["ffmpeg", "-i", in_path, "-filter:v","crop", "{}:{}:{}:{}".format(*crop_area), out_path])
-    
-    # proc.wait()
+
 
 def start_play(in_path, out_path):
     global pos
@@ -40,25 +28,49 @@ def start_play(in_path, out_path):
     cv2.setMouseCallback(window_name, mouse_drawing)
     circles = []
 
-    while True:
-        _, frame = cap.read()
-        h, w = frame.shape[:2]
-        for center_position in pos:
-            cv2.rectangle(frame, tuple([i-2 for i in center_position]), tuple([i+2 for i in center_position]), (255,0,0), 2)
+    while(cap.isOpened()):
+        ret, frame = cap.read()
+        if ret:
+            h, w = frame.shape[:2]
+            for center_position in pos:
+                cv2.rectangle(frame, tuple([i-2 for i in center_position]), tuple([i+2 for i in center_position]), (183,143,58), 2)
 
-        cv2.imshow(window_name, frame)
+            cv2.imshow(window_name, frame)
 
-        if len(pos) == 2:
-            crop(pos, in_path, out_path)
-            break
+            if len(pos) == 2:
+                flag = False
+                cv2.rectangle(frame, (min(pos[0][0],pos[1][0]),min(pos[0][1],pos[1][1])), (max(pos[0][0],pos[1][0]),max(pos[0][1],pos[1][1])), (180,159,220), 2)
+                cv2.imshow(window_name, frame)
+                while True:
+                    key = cv2.waitKey(1)
+                    # Press enter to start crop
+                    if key in [10,13]:
+                        crop(pos, in_path, out_path)
+                        flag = True
+                        break
+                    # Press esc, q, or p to quit cropping and set pos empty
+                    elif key in [27, ord("q"),ord("p")]:
+                        pos=[]
+                        break
+                    # Press z to delete the lastest point
+                    elif key == ord("z") and len(pos)>0:
+                        pos=pos[:len(pos)-1]
+                        break
+                if flag:
+                    break
 
-        # Quit the current video position marking
-        key = cv2.waitKey(1)
-        if key in [27, ord("q"), ord("p")]:
-            break
-        # Reset the positions
-        elif key == ord("r"):
-            pos = []
+            # Quit the current video position marking
+            key = cv2.waitKey(1)
+            if key in [27, ord("q"), ord("p")]:
+                break
+            # Reset the positions
+            elif key == ord("r"):
+                pos = []
+            # Delete the lastest point
+            elif key == ord("z") and len(pos)>0:
+                pos=pos[:len(pos)-1]
+        else:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     cap.release()
     cv2.destroyAllWindows()
