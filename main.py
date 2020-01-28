@@ -8,7 +8,7 @@ import threading
 from pathlib2 import Path
 pos = []
 procs = []
-global pts1
+
 def mouse_drawing(event, x, y, flags, params):
     if event == cv2.EVENT_LBUTTONDOWN:
         pos.append([x, y])
@@ -26,7 +26,6 @@ def start_play(in_path, out_path):
     window_name="Original Video"
     cv2.namedWindow(window_name)
     cv2.setMouseCallback(window_name, mouse_drawing)
-    circles = []
 
     while(cap.isOpened()):
         ret, frame = cap.read()
@@ -92,7 +91,8 @@ if __name__ == "__main__":
     args.out_path=Path(args.out_path)
     signal.signal(signal.SIGINT, signal_handler)
     if args.in_path.is_file():
-        start_play(str(args.in_path), str(args.out_path))
+        out_path = str(args.out_path) if args.out_path.is_file() else str(args.out_path/args.in_path.name)
+        start_play(str(args.in_path), out_path)
     elif args.in_path.is_dir():
         videos=[i for i in list(args.in_path.iterdir()) if not i.name.startswith(".") and i.is_file()]
         for video in videos:
